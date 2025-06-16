@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コーヒーマシンUI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="message">コーヒーをセットして<br>サイズを選択してください</div>
+    <div class="step step1">
+      <div class="step-number">1</div>
+      <div class="button-row">
+        <button class="btn btn-normal">普通サイズ</button>
+        <button class="btn">大サイズ</button>
+      </div>
+    </div>
+    <div class="step step2">
+      <div class="step-number">2</div>
+      <div class="l-hex-shape">
+        <svg viewBox="0 0 600 300">
+          <!-- L字の六角形をパスで描画（高さを拡大） -->
+          <path d="M55 50 L290 50 L290 130 L545 130 L545 225 L55 225 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="miter"/>
+        </svg>
+      </div>
+      <div class="button-row">
+        <span class="coffee-label">コーヒー</span>
+        <button class="btn cafelatte">カフェラテ</button>
+      </div>
+      <div class="button-row button-row-bottom">
+        <button class="btn btn-small">薄いめ</button>
+        <button class="btn btn-small">普通</button>
+        <button class="btn btn-small">濃いめ</button>
+      </div>
+    </div>
+    <div class="step step3">
+      <div class="step-number">3</div>
+      <div class="button-row">
+        <button class="btn">アイス</button>
+        <button class="btn">ホット</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // ステップの状態管理
+    let step = 1;
+    let selected = {
+      size: null,
+      type: null,
+      strength: null,
+      temp: null
+    };
+
+    // ボタン要素取得
+    const btnSizeNormal = document.querySelector('.btn-normal');
+    const btnSizeLarge = document.querySelector('.btn:not(.btn-normal):not(.cafelatte):not(.btn-small)');
+    const btnCafelatte = document.querySelector('.btn.cafelatte');
+    const btnStrengths = document.querySelectorAll('.btn-small');
+    const btnTempIce = document.querySelectorAll('.btn')[document.querySelectorAll('.btn').length-2];
+    const btnTempHot = document.querySelectorAll('.btn')[document.querySelectorAll('.btn').length-1];
+    const coffeeLabel = document.querySelector('.coffee-label');
+    const message = document.querySelector('.message');
+    const stepNumbers = document.querySelectorAll('.step-number');
+
+    // 初期化
+    function updateUI() {
+      // 1. サイズ選択
+      btnSizeNormal.classList.toggle('selected', selected.size === 'normal');
+      btnSizeLarge.classList.toggle('selected', selected.size === 'large');
+      btnSizeNormal.classList.toggle('unselected', selected.size && selected.size !== 'normal');
+      btnSizeLarge.classList.toggle('unselected', selected.size && selected.size !== 'large');
+      btnSizeNormal.disabled = step !== 1;
+      btnSizeLarge.disabled = step !== 1;
+      // 2. 種類選択
+      coffeeLabel.classList.toggle('selected', selected.type === 'coffee');
+      btnCafelatte.classList.toggle('selected', selected.type === 'cafelatte');
+      btnCafelatte.classList.toggle('unselected', (selected.type && selected.type !== 'cafelatte') || (selected.strength && step >= 2));
+      btnCafelatte.disabled = step !== 2;
+      coffeeLabel.style.opacity = step === 2 ? '1' : '0.5';
+      // 3. 濃さ選択
+      btnStrengths.forEach(btn => {
+        if(selected.type === 'cafelatte') {
+          btn.classList.add('unselected');
+          btn.classList.remove('selected');
+        } else {
+          btn.classList.toggle('selected', selected.strength === btn.textContent);
+          btn.classList.toggle('unselected', selected.strength && selected.strength !== btn.textContent);
+        }
+        btn.disabled = step !== 2;
+      });
+      // 4. 温度選択
+      btnTempIce.classList.toggle('selected', selected.temp === 'ice');
+      btnTempHot.classList.toggle('selected', selected.temp === 'hot');
+      btnTempIce.classList.remove('hot', 'ice', 'unselected');
+      btnTempHot.classList.remove('hot', 'ice', 'unselected');
+      if(selected.temp === 'hot') {
+        btnTempHot.classList.add('hot');
+        btnTempIce.classList.add('unselected');
+      }
+      if(selected.temp === 'ice') {
+        btnTempIce.classList.add('ice');
+        btnTempHot.classList.add('unselected');
+      }
+      btnTempIce.disabled = step !== 3;
+      btnTempHot.disabled = step !== 3;
+      // ステップ番号色
+      stepNumbers.forEach((el, i) => {
+        el.style.color = (i+1) === step ? '#FFD94A' : '#fff';
+      });
+      // L字枠とコーヒーラベルのグレー化
+      const lHexShape = document.querySelector('.l-hex-shape');
+      if ((selected.type === 'cafelatte') || (selected.strength && step >= 2)) {
+        lHexShape.classList.add('unselected');
+        coffeeLabel.classList.add('unselected');
+      } else {
+        lHexShape.classList.remove('unselected');
+        coffeeLabel.classList.remove('unselected');
+      }
+    }
+
+    // イベント
+    btnSizeNormal.addEventListener('click', () => {
+      selected.size = 'normal';
+      step = 2;
+      message.textContent = 'コーヒーの種類を選択してください';
+      updateUI();
+    });
+    btnSizeLarge.addEventListener('click', () => {
+      selected.size = 'large';
+      step = 2;
+      message.textContent = 'コーヒーの種類を選択してください';
+      updateUI();
+    });
+    btnCafelatte.addEventListener('click', () => {
+      if(step === 2){
+        selected.type = 'cafelatte';
+        step = 3;
+        message.textContent = 'アイスまたはホットを選択してください';
+        updateUI();
+      }
+    });
+    btnStrengths.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(step === 2){
+          selected.strength = btn.textContent;
+          step = 3;
+          message.textContent = 'アイスまたはホットを選択してください';
+          updateUI();
+        }
+      });
+    });
+    btnTempIce.addEventListener('click', () => {
+      if(step === 3){
+        selected.temp = 'ice';
+        message.textContent = 'コーヒーを抽出しています';
+        step = 4;
+        updateUI();
+        setTimeout(()=>{
+          message.textContent = 'おいしいコーヒーができあがりました';
+          setTimeout(()=>{
+            // 初期状態に戻す
+            step = 1;
+            selected = { size: null, type: null, strength: null, temp: null };
+            message.innerHTML = 'コーヒーをセットして<br>サイズを選択してください';
+            updateUI();
+          }, 3000);
+        }, 2000);
+      }
+    });
+    btnTempHot.addEventListener('click', () => {
+      if(step === 3){
+        selected.temp = 'hot';
+        message.textContent = 'コーヒーを抽出しています';
+        step = 4;
+        updateUI();
+        setTimeout(()=>{
+          message.textContent = 'おいしいコーヒーができあがりました';
+          setTimeout(()=>{
+            // 初期状態に戻す
+            step = 1;
+            selected = { size: null, type: null, strength: null, temp: null };
+            message.innerHTML = 'コーヒーをセットして<br>サイズを選択してください';
+            updateUI();
+          }, 3000);
+        }, 2000);
+      }
+    });
+
+    // 初期表示
+    updateUI();
+  </script>
+</body>
+</html>
